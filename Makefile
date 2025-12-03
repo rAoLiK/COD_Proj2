@@ -14,4 +14,4 @@ cache.o:  cache.c cache.h
 	$(CC) $(CFLAGS) -c cache.c
 
 clean:
-	rm -f *.o sim
+	@rm -f *.o sim
