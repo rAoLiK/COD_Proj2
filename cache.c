@@ -262,9 +262,85 @@ void perform_access(addr, access_type)
 /************************************************************/
 void flush()
 {
+  int set;
+  Pcache_line line, next_line;
+  if (cache_split == FALSE) {
+    // Unified cache
+    Pcache pc = icache;
+    for (set = 0; set < pc->n_sets; set++) {
+      line = pc->LRU_head[set];
+      while (line) {
+        next_line = line->LRU_next;
+        if (line->dirty && cache_writeback) {
+          cache_stat_inst.copies_back += words_per_block;
+        }
+        free(line);
+        line = next_line;
+      }
+      pc->LRU_head[set] = NULL;
+      pc->LRU_tail[set] = NULL;
+      pc->set_contents[set] = 0;
+    }
+    // Free cache arrays
+    if (pc->LRU_head) free(pc->LRU_head);
+    if (pc->LRU_tail) free(pc->LRU_tail);
+    if (pc->set_contents) free(pc->set_contents);
+    pc->LRU_head = NULL;
+    pc->LRU_tail = NULL;
+    pc->set_contents = NULL;
+    pc->contents = 0;
+  } else {
+    // Split cache
+    // Flush I-CACHE
+    Pcache pc = icache;
+    for (set = 0; set < pc->n_sets; set++) {
+      line = pc->LRU_head[set];
+      while (line) {
+        next_line = line->LRU_next;
+        if (line->dirty && cache_writeback) {
+          cache_stat_inst.copies_back += words_per_block;
+        }
+        free(line);
+        line = next_line;
+      }
+      pc->LRU_head[set] = NULL;
+      pc->LRU_tail[set] = NULL;
+      pc->set_contents[set] = 0;
+    }
+    // Free I-cache arrays
+    if (pc->LRU_head) free(pc->LRU_head);
+    if (pc->LRU_tail) free(pc->LRU_tail);
+    if (pc->set_contents) free(pc->set_contents);
+    pc->LRU_head = NULL;
+    pc->LRU_tail = NULL;
+    pc->set_contents = NULL;
+    pc->contents = 0;
 
-  /* flush the cache */
-
+    // Flush D-CACHE
+    pc = dcache;
+    for (set = 0; set < pc->n_sets; set++) {
+      line = pc->LRU_head[set];
+      while (line) {
+        next_line = line->LRU_next;
+        if (line->dirty && cache_writeback) {
+          cache_stat_data.copies_back += words_per_block;
+        }
+        free(line);
+        line = next_line;
+      }
+      pc->LRU_head[set] = NULL;
+      pc->LRU_tail[set] = NULL;
+      pc->set_contents[set] = 0;
+    }
+    // Free D-cache arrays
+    if (pc->LRU_head) free(pc->LRU_head);
+    if (pc->LRU_tail) free(pc->LRU_tail);
+    if (pc->set_contents) free(pc->set_contents);
+    pc->LRU_head = NULL;
+    pc->LRU_tail = NULL;
+    pc->set_contents = NULL;
+    pc->contents = 0;
+  }
 }
 /************************************************************/
 
